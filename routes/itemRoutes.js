@@ -5,13 +5,39 @@ const router = express.Router();
 
 // Get all items
 router.get('/', (req, res) => {
-    db.all('SELECT * FROM items', (err, rows) => {
+    db.all('SELECT * FROM items', (err, itemsRows) => {
         if (err) {
             console.error('Error fetching items:', err.message);
             res.status(500).json({ error: 'Internal Server Error' });
-        } else {
-            res.json(rows);
+            return;
         }
+
+        // Fetch variants for each item
+        Promise.all(itemsRows.map(item => {
+            return new Promise((resolve, reject) => {
+                db.all('SELECT * FROM variants WHERE item_id = ?', [item.id], (err, variantRows) => {
+                    if (err) {
+                        reject(err);
+                    } else {
+                        // Map variant rows to transform "value" to "description"
+                        const variants = variantRows.map(variantRow => ({
+                            ...variantRow,
+                            description: variantRow.value,
+                            value: undefined
+                        }));
+                        item.variants = variants;
+                        resolve(item);
+                    }
+                });
+            });
+        }))
+        .then(itemsWithVariants => {
+            res.json(itemsWithVariants);
+        })
+        .catch(error => {
+            console.error('Error fetching variants:', error.message);
+            res.status(500).json({ error: 'Internal Server Error' });
+        });
     });
 });
 
@@ -52,7 +78,7 @@ router.post('/', (req, res) => {
 });
 
 // Update an item
-router.put('/:id', (req, res) => {
+router.put('/items/:id', (req, res) => {
     const { id } = req.params;
     const { name, description, price, cost, quantity, in_stock } = req.body;
     const profitValue = price - cost;
@@ -69,7 +95,7 @@ router.put('/:id', (req, res) => {
 }); 
 
 // Delete an item
-router.delete('/:id', (req, res) => {
+router.delete('/items/:id', (req, res) => {
     const { id } = req.params;
     db.run('DELETE FROM items WHERE id = ?', id, function(err) {
         if (err) {

@@ -3,8 +3,10 @@ const express = require('express');
 const cors = require('cors');
 const itemRoutes = require('./routes/itemRoutes');
 const employeeRoutes = require('./routes/employeeRoutes');
+const variantRoutes = require('./routes/variantRoutes');
 const db = require('./routes/database'); // Require the database module
 const PORT = process.env.PORT || 3000;
+// fix variants 
 function createItemsTable() {
     db.run(`CREATE TABLE IF NOT EXISTS items (
         id INTEGER PRIMARY KEY AUTOINCREMENT,
@@ -22,17 +24,20 @@ function createItemsTable() {
         } else {
             console.log('Items table created successfully');
         }
-    });
-
+    });}
+function createVariantsTable() {
     // Create variants table (if not exists)
     db.run(`CREATE TABLE IF NOT EXISTS variants (
         id INTEGER PRIMARY KEY AUTOINCREMENT,
-        item_id INTEGER NOT NULL,
-        name TEXT NOT NULL,  -- Name or label for the variant (e.g., "Size", "Color")
-        value TEXT NOT NULL, -- Value of the variant (e.g., "Small", "Red")
-        price INTEGER NOT NULL, -- Price adjustment for the variant
-        cost INTEGER NOT NULL, -- Cost adjustment for the variant
-        quantity INTEGER NOT NULL DEFAULT 0, -- Quantity of the variant in stock
+        item_id INTEGER ,
+        name TEXT ,
+        description TEXT ,
+        price INTEGER ,
+        cost INTEGER ,
+        profit_percentage REAL ,
+        profit_value INTEGER ,
+        quantity INTEGER  DEFAULT 0,
+        in_stock BOOLEAN  DEFAULT 0,
         FOREIGN KEY (item_id) REFERENCES items(id) ON DELETE CASCADE
     )`, (err) => {
         if (err) {
@@ -41,8 +46,9 @@ function createItemsTable() {
             console.log('Variants table created successfully');
         }
     });
+    
+    
 }
-
 // Create employees table (if not exists)
 function createEmployeesTable() {
     db.run(`CREATE TABLE IF NOT EXISTS employees (
@@ -54,7 +60,7 @@ function createEmployeesTable() {
 }
 createEmployeesTable()
 createItemsTable()
-
+createVariantsTable()
 const app = express();
 app.use(cors({ origin: '*' }));
 app.use(express.json());
@@ -64,6 +70,8 @@ app.use('/items', itemRoutes);
 
 // Mount employee routes at /employees
 app.use('/employees', employeeRoutes);
+
+app.use(variantRoutes);
 
 // Start the server
 app.listen(PORT, () => {
