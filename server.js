@@ -5,7 +5,7 @@ const itemRoutes = require('./routes/itemRoutes');
 const employeeRoutes = require('./routes/employeeRoutes');
 const variantRoutes = require('./routes/variantRoutes');
 const db = require('./routes/database'); // Require the database module
-const PORT = process.env.PORT || 3000; 
+const PORT = process.env.PORT || 3000;
 // fix variants 
 function createItemsTable() {
     db.run(`CREATE TABLE IF NOT EXISTS items (
